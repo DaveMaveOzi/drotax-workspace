@@ -1,39 +1,47 @@
-# Drotax Mail — Streamlit starter
+# Drotax Workspace
 
-This is the Streamlit rebuild of Drotax Mail. It uses SQLite locally, includes a visible high-contrast navigation sidebar and a Light/Dark appearance switch, and supports:
-- First-run administrator setup
-- Employee account creation by an administrator
-- Login with salted PBKDF2 password hashes
-- Internal email delivery between registered employees
-- Inbox, sent items, contacts, compose, reply entry point and attachments
-- SMTP outbound integration for external recipients
-- IMAP import of unread mail from one configured mailbox
+A unified Streamlit application combining a shared employee directory, internal email, ticket/task workflows and notifications.
 
-## Important limitations
-This is an MVP foundation, not a production-ready Outlook replacement or a complete mail server.
-- External email requires a real company domain and an approved email provider or properly operated mail server.
-- The IMAP importer currently synchronises one mailbox into the employee account whose address matches `IMAP_USERNAME`.
-- Draft saving, robust conversation threading, multi-mailbox synchronisation, attachment import from IMAP, HTML email rendering, spam/malware scanning, audit logs, background jobs and production-grade security remain future work.
-- Internal email accounts are application accounts. They do not automatically become internet email mailboxes.
+## Included in this starter build
+- One sign-in and shared user directory.
+- Admin, IT Personnel, Team Lead, Member and Viewer roles.
+- Overview dashboard.
+- Internal email inbox and compose screen.
+- Recipient name/email matching with selectable full email suggestions.
+- New-mail unread counter and a subtle sound alert while the workspace is open (15-second polling); sound can be muted.
+- TeamTrack ticket creation, assignment, status updates and comments.
+- Shared in-app notifications.
+- Light/dark theme.
+- Legacy source copies in `migrations/` for reference during migration.
 
-## Run in PyCharm on Windows
-1. Extract the ZIP.
-2. Open the `Drotax_Mail_Streamlit` folder in PyCharm.
-3. Configure the project interpreter to use the Python installation already on your computer. If PyCharm already has a working interpreter, select it; do not create a new virtual environment if Windows fails to create one.
-4. Open the PyCharm Terminal.
-5. Install dependencies:
-   `python -m pip install -r requirements.txt`
-6. Copy `.env.example` to `.env`. Leave the SMTP and IMAP fields blank for local internal-email testing.
-7. Start the app:
-   `python -m streamlit run app.py`
-8. Open the local URL printed in the terminal, usually `http://localhost:8501`.
-9. On first launch, create the administrator account. Use Administration to create at least one more employee account.
-10. Sign in as employee A and send a message to employee B's registered email address. Sign in as employee B to view it.
+## Run in PyCharm (Windows)
+1. Extract this folder.
+2. Open the folder in PyCharm.
+3. Open Terminal and create a virtual environment: `python -m venv .venv`
+4. Activate it: `.venv\\Scripts\\activate`
+5. Install packages: `python -m pip install -r requirements.txt`
+6. Run: `python -m streamlit run app.py`
+7. On first launch, create the first administrator account.
 
-## External email configuration
-When Drotax chooses its domain and provider, obtain the provider's SMTP and IMAP hostnames, ports, and app-specific credentials. Add them to `.env` using the field names in `.env.example`. Never put credentials in source code or commit `.env`.
+## Email configuration
+Internal messages are stored and delivered to Drotax Workspace accounts. For external email delivery, configure Streamlit secrets or environment variables:
 
-SMTP is used to send external messages. IMAP is used by the administrator's Fetch external inbox now action to import unread messages from the configured mailbox.
+```toml
+SMTP_HOST = "smtp.your-provider.com"
+SMTP_PORT = "587"
+SMTP_USERNAME = "your-account"
+SMTP_PASSWORD = "your-app-password"
+SMTP_FROM_EMAIL = "mail@yourdomain.com"
+```
 
-## Before internal deployment
-Move from SQLite to PostgreSQL; run behind a production web server/reverse proxy with HTTPS; add secure secrets management; enforce attachment size/type limits and malware scanning; implement audit logs, rate limits, backups, monitoring, permission tests and a formal security review. Streamlit's built-in interaction model is suitable for an internal MVP, but a high-concurrency enterprise mail client may eventually need a separate API/backend and a more specialised frontend.
+The current implementation reads SMTP values from environment variables. For Streamlit Community Cloud, add a small secrets-to-environment adapter or update `send_external_email` to read `st.secrets` before using external delivery. Never commit credentials.
+
+## Important limitations before production
+This is an integration MVP, not yet a production migration of every legacy screen. The TeamTrack module currently includes core ticket creation, assignment, status and comments; the legacy source is retained under `migrations/` for porting the remaining reports, workspace settings, registration flows and other existing screens. The legacy Drotax Mail source is also retained for porting remaining Sent, Drafts, Contacts, IMAP import and administration features.
+
+The database currently uses SQLite for local development. Do not use this local database on Streamlit Community Cloud for durable company records. Before real company use, migrate to managed PostgreSQL and durable attachment storage, implement backups, rate limiting, audit logging, stronger authorization tests and secure deployment secrets.
+
+The notification sound requires the browser to permit audio playback. A user may need to interact with the page first. The current mail polling only detects messages delivered into this unified app; it does not independently monitor an external IMAP mailbox.
+
+## Legacy migration
+Do not copy a production database over the new database. Back up both existing databases and implement/test a controlled migration for user accounts, password hash schemes, messages, recipients, tickets, comments, attachments and notifications before switching users to this application. The legacy source files are reference copies, not an automatic data migration.
